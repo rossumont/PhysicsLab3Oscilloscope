@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Oscilloscope Virtual Lab — GOS-622G</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#0B1A2B;
+ background-image:linear-gradient(rgba(127,212,168,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(127,212,168,.055) 1px,transparent 1px);
+ background-size:28px 28px;color:#e8edf2;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+header{background:#102438;border-bottom:1px solid #1d3b57;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0}
+header h1{font-size:15px;font-weight:700;cursor:pointer;user-select:none;letter-spacing:.3px}
+header h1 small{display:block;color:#8aa2b8;font-weight:400;font-size:10.5px;letter-spacing:0}
+.hbtn{background:transparent;border:1px solid #7FD4A8;color:#7FD4A8;padding:6px 14px;border-radius:5px;cursor:pointer;font-weight:600;font-size:12px}
+.hbtn:hover{background:#7FD4A8;color:#0B1A2B}
+.hbtn.teach{border-color:#E8B23A;color:#E8B23A;margin-left:6px}
+.hbtn.teach:hover{background:#E8B23A;color:#0B1A2B}
+
+main{flex:1;display:flex;gap:8px;padding:8px;overflow:hidden}
+.left{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+
+.crt-shell{flex:1 1 auto;display:flex;align-items:center;justify-content:center;background:transparent;
+ border:0;padding:0;min-height:0;min-width:0;overflow:hidden}
+.crt-inner{background:#2b3034;padding:3px;border-radius:5px;flex:0 0 auto;
+ box-shadow:0 0 0 1px #1d3b57, inset 0 0 10px rgba(0,0,0,.6)}
+canvas{display:block;border-radius:4px}
+
+.readout{font-family:'Courier New',monospace;font-size:11.5px;display:flex;flex-wrap:wrap;gap:8px;
+ align-items:center;flex-shrink:0;margin-top:5px;border-top:1px solid #1d3b57;padding-top:6px}
+.chip{background:#0B1A2B;border:1px solid #1d3b57;border-radius:4px;padding:2px 8px}
+.chip b{color:#7FD4A8}
+
+.panel{background:#102438;border:1px solid #1d3b57;border-radius:8px;padding:11px;flex-shrink:0}
+.panel h3{font-size:11px;color:#7FD4A8;text-transform:uppercase;letter-spacing:1.3px;margin-bottom:9px;border-bottom:1px solid #1d3b57;padding-bottom:5px}
+.panel.input{background:#17202c;border-color:#E8B23A;box-shadow:0 0 0 1px rgba(232,178,58,.12)}
+.panel.input h3{color:#E8B23A;border-bottom-color:rgba(232,178,58,.3)}
+
+.row{margin-bottom:10px}.row:last-child{margin-bottom:0}
+.lab{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;color:#8aa2b8;font-family:'Courier New',monospace;letter-spacing:.5px}
+.lab b{color:#e8edf2;font-size:12px}
+.grid{display:grid;gap:5px}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+button.sw{padding:8px 2px;background:#0B1A2B;border:1px solid #1d3b57;color:#c4d2de;border-radius:5px;cursor:pointer;font-size:11px;font-family:'Courier New',monospace;font-weight:700}
+button.sw:hover{border-color:#E8B23A}
+button.sw.on{background:rgba(232,178,58,.16);color:#E8B23A;border-color:#E8B23A}
+
+input[type=range]{width:100%;height:5px;border-radius:3px;background:#1d3b57;outline:none;-webkit-appearance:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#7FD4A8;cursor:pointer}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:#7FD4A8;border:none}
+.input input[type=range]::-webkit-slider-thumb{background:#E8B23A}
+.input input[type=range]::-moz-range-thumb{background:#E8B23A}
+
+.fgdisp{background:#050d05;border:1px solid #2f4a2f;border-radius:5px;padding:8px;text-align:center;font-family:'Courier New',monospace;font-size:22px;color:#5cf25c;letter-spacing:2px;margin-bottom:10px;text-shadow:0 0 9px rgba(92,242,92,.7)}
+
+.ctrlpanel{padding:6px 11px 7px}
+.ctrlcaption{font-size:9.5px;color:#5d7792;text-transform:uppercase;letter-spacing:1.2px;margin-right:auto}
+.ctrlrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.knobpair{display:flex;gap:10px;flex:0 0 auto}
+.knobwrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.knobwrap svg{touch-action:none;display:block;width:132px;height:132px}
+.ktitle{font-size:9px;letter-spacing:1px;color:#8aa2b8;font-family:'Courier New',monospace;font-weight:700}
+.kval{font-family:'Courier New',monospace;font-size:12.5px;font-weight:700;color:#7FD4A8;background:#0B1A2B;border:1px solid #1d3b57;border-radius:4px;padding:3px 0;min-width:58px;text-align:center}
+.knobrow{display:flex;gap:4px;align-items:stretch}
+.knobrow button{width:28px;background:#0B1A2B;border:1px solid #1d3b57;color:#7FD4A8;border-radius:5px;cursor:pointer;font-size:14px;font-weight:700;line-height:1}
+.knobrow button:hover{background:#7FD4A8;color:#0B1A2B}
+.possliders{flex:1;min-width:160px;display:flex;flex-direction:column;gap:8px}
+.klabel{fill:#c4d2de;font-size:9.8px;font-family:'Courier New',monospace}
+.klabel.sel{fill:#7FD4A8;font-weight:700;font-size:11.6px}
+.khit{cursor:pointer}
+
+aside{width:272px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+.note{font-size:10.5px;color:#8aa2b8;line-height:1.6}
+.ansbox{background:#0B1A2B;border:1px dashed #E8B23A;border-radius:6px;padding:9px;font-family:'Courier New',monospace;font-size:12px;line-height:1.8;color:#E8B23A}
+.cred{font-size:10px;color:#5d7792;line-height:1.55;text-align:center;padding:6px 4px}
+.pwbox{display:flex;gap:6px;margin-top:8px}
+.pwbox input{flex:1;background:#0B1A2B;border:1px solid #1d3b57;color:#e8edf2;border-radius:5px;padding:7px 9px;font-family:'Courier New',monospace;font-size:12px}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-thumb{background:#1d3b57;border-radius:4px}
+/* knobs beside the screen, like the real front panel — the script turns this
+   on only when it actually yields a bigger screen than stacking them below */
+.left.beside{flex-direction:row;align-items:center;gap:10px}
+.left.beside #ctrlBlock{width:258px;flex:0 0 auto;display:flex;flex-direction:column;
+  justify-content:center;padding:9px}
+.left.beside .ctrlrow{flex-direction:column;gap:13px;align-items:stretch}
+.left.beside .knobpair{justify-content:center;gap:6px}
+.left.beside .knobwrap svg{width:116px;height:116px}
+.left.beside .klabel{font-size:11.2px}
+.left.beside .klabel.sel{font-size:13.2px}
+.left.beside .possliders{width:100%;min-width:0;gap:12px}
+.left.beside .readout{justify-content:center}
+@media(max-width:900px){
+  main{flex-direction:column;overflow-y:auto}
+  aside{width:100%;overflow:visible}
+  .left{overflow:visible;min-height:auto}
+  .crt-shell{flex:0 0 auto}
+}
+/* short windows: shrink the knobs further so the screen keeps its room */
+@media(max-height:780px){
+  .knobwrap svg{width:112px;height:112px}
+  .klabel{font-size:11.6px}.klabel.sel{font-size:13.6px}
+  .possliders{gap:6px}
+  .ctrlpanel{padding:5px 10px 6px}
+  .lab{margin-bottom:3px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="ttl">Oscilloscope Virtual Lab <small id="sub">GOS-622G + GFG-8216</small></h1>
+  <div>
+    <button class="hbtn" id="langBtn">ไทย</button>
+    <button class="hbtn teach" id="teachBtn">Teacher</button>
+  </div>
+</header>
+
+<main>
+  <div class="left">
+    <div class="crt-shell"><div class="crt-inner"><canvas id="cv"></canvas></div></div>
+
+    <div class="panel ctrlpanel" id="ctrlBlock">
+      <div class="ctrlrow">
+        <div class="knobpair">
+          <div class="knobwrap">
+            <div class="ktitle">VOLTS/DIV</div>
+            <div id="voltKnob"></div>
+            <div class="knobrow"><button id="vDown">−</button><span class="kval" id="vVal">1 V</span><button id="vUp">+</button></div>
+          </div>
+          <div class="knobwrap">
+            <div class="ktitle">TIME/DIV</div>
+            <div id="timeKnob"></div>
+            <div class="knobrow"><button id="tDown">−</button><span class="kval" id="tVal">1 ms</span><button id="tUp">+</button></div>
+          </div>
+        </div>
+        <div class="possliders">
+          <div>
+            <div class="lab"><span id="l_vpos">POSITION ▲▼</span><b id="vposV">0.0</b></div>
+            <input type="range" id="vpos" min="-4" max="4" step="0.1" value="0">
+          </div>
+          <div>
+            <div class="lab"><span id="l_hpos">POSITION ◀▶</span><b id="hposV">0.0</b></div>
+            <input type="range" id="hpos" min="-5" max="5" step="0.1" value="0">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="panel input" id="fgPanel">
+      <h3 id="h_fg">Function Generator — Input</h3>
+      <div class="fgdisp" id="fgFreq">1.000 kHz</div>
+      <div class="row">
+        <div class="lab"><span id="l_wave">WAVEFORM</span></div>
+        <div class="grid g3">
+          <button class="sw" data-wave="sine">∿ Sine</button>
+          <button class="sw" data-wave="tri">△ Tri</button>
+          <button class="sw" data-wave="sq">⊓ Square</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lab"><span id="l_range">RANGE (Hz)</span></div>
+        <div class="grid g4" id="rangeBtns"></div>
+      </div>
+      <div class="row">
+        <div class="lab"><span id="l_dial">FREQUENCY</span><b id="dialV">1.00</b></div>
+        <input type="range" id="dial" min="0.1" max="1" step="0.005" value="1">
+      </div>
+      <div class="row">
+        <div class="lab"><span id="l_ampl">AMPL (Vp-p)</span><b id="amplV">4.00 V</b></div>
+        <input type="range" id="ampl" min="0.02" max="20" step="0.02" value="4">
+      </div>
+    </div>
+
+    <div class="panel hidden" id="quizPanel">
+      <h3 id="h_quiz">Unknown Signal</h3>
+      <div class="note" id="quizNote"></div>
+    </div>
+
+    <div class="panel hidden" id="teachPanel">
+      <h3 id="h_teach">Teacher Panel</h3>
+      <div class="grid g2"><button class="sw" id="quizBtn">New quiz</button><button class="sw" id="ansBtn">Show answer</button></div>
+      <div class="ansbox hidden" id="ansBox" style="margin-top:9px"></div>
+      <div class="grid g2" style="margin-top:9px"><button class="sw" id="resetBtn">Reset</button><button class="sw" id="exitTeach">Exit</button></div>
+    </div>
+
+    <div class="panel"><h3 id="h_help">How to read</h3><div class="note" id="helpTxt"></div></div>
+
+    <div class="cred">
+      ผศ.ดร.รสสุมนต์ จารยะพันธุ์<br>
+      มหาวิทยาลัยเทคโนโลยีราชมงคลตะวันออก อุเทนถวาย<br>ไม่สงวนลิขสิทธิ์<br><br>
+      Asst.Prof.Dr. Rossumont Jaryabhand<br>
+      Rajamangala University of Technology Tawan-ok, Uthenthawai Campus<br>No Right Reserved
+    </div>
+  </aside>
+</main>
+
+<script>
+const VOLTS=[0.005,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5];
+const VLAB=['5m','10m','20m','50m','.1','.2','.5','1','2','5'];
+const TIMES=[0.2e-6,0.5e-6,1e-6,2e-6,5e-6,1e-5,2e-5,5e-5,1e-4,2e-4,5e-4,
+             1e-3,2e-3,5e-3,1e-2,2e-2,5e-2,0.1,0.2,0.5];
+const TLAB=['.2µ','.5µ','1µ','2µ','5µ','10µ','20µ','50µ','.1m','.2m','.5m',
+            '1m','2m','5m','10m','20m','50m','.1','.2','.5'];
+const RANGES=[1,10,100,1e3,1e4,1e5,1e6];
+const DIVX=10,DIVY=10;
+const PW='9;5:4*5‘';
+
+const S={wave:'sine',range:1e3,dial:1,vpp:4,vi:7,ti:11,vpos:0,hpos:0};
+const $=id=>document.getElementById(id);
+const fmtV=v=>v>=1?v+' V':Math.round(v*1000)+' mV';
+function fmtT(t){if(t>=1)return t+' s';if(t>=1e-3)return +(t*1e3).toFixed(3)+' ms';return +(t*1e6).toFixed(3)+' µs';}
+function fmtF(f){if(f>=1e6)return (f/1e6).toFixed(3)+' MHz';if(f>=1e3)return (f/1e3).toFixed(3)+' kHz';return f.toFixed(2)+' Hz';}
+const freq=()=>S.range*S.dial;
+
+/* ---------- rotary knob ---------- */
+function buildKnob(hostId,labels,size,onPick){
+  const host=$(hostId),c=size/2,rB=size*0.185,rL=size*0.425,n=labels.length;
+  const A0=-150,st=300/(n-1);
+  let s=`<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+    <defs><radialGradient id="kg_${hostId}" cx="35%" cy="30%">
+    <stop offset="0%" stop-color="#f5efdc"/><stop offset="70%" stop-color="#ded4b6"/><stop offset="100%" stop-color="#b6ab8a"/>
+    </radialGradient></defs>`;
+  labels.forEach((t,i)=>{
+    const a=(A0+i*st)*Math.PI/180,sx=Math.sin(a),cy=-Math.cos(a);
+    const x1=c+sx*(rB+5),y1=c+cy*(rB+5),x2=c+sx*(rB+11),y2=c+cy*(rB+11);
+    const lx=c+sx*rL,ly=c+cy*rL;
+    s+=`<g class="khit" data-i="${i}">
+      <circle cx="${lx}" cy="${ly}" r="9" fill="transparent"/>
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#5d7792" stroke-width="1.3" data-tick="${i}"/>
+      <text x="${lx}" y="${ly+3}" text-anchor="middle" class="klabel" data-lab="${i}">${t}</text></g>`;
+  });
+  s+=`<circle cx="${c}" cy="${c}" r="${rB}" fill="url(#kg_${hostId})" stroke="#8d8368" stroke-width="1.6"/>
+      <circle cx="${c}" cy="${c}" r="${rB*0.6}" fill="none" stroke="rgba(0,0,0,.16)"/>
+      <line id="ptr_${hostId}" x1="${c}" y1="${c}" x2="${c}" y2="${c-rB+3}" stroke="#3f3f46" stroke-width="3.6" stroke-linecap="round"/>
+      <circle cx="${c}" cy="${c}" r="2.8" fill="#3f3f46"/></svg>`;
+  host.innerHTML=s;
+  host.querySelector('svg').addEventListener('click',e=>{
+    const g=e.target.closest('[data-i]');if(g)onPick(+g.dataset.i);});
+  host._set=i=>{
+    $('ptr_'+hostId).setAttribute('transform',`rotate(${A0+i*st} ${c} ${c})`);
+    host.querySelectorAll('[data-lab]').forEach(t=>t.classList.toggle('sel',+t.dataset.lab===i));
+    host.querySelectorAll('[data-tick]').forEach(t=>t.setAttribute('stroke',+t.dataset.tick===i?'#7FD4A8':'#5d7792'));};
+}
+
+/* ---------- waveform (AC only, trigger locked at 0 V rising) ---------- */
+function shape(u){u-=Math.floor(u);
+  if(S.wave==='sine')return Math.sin(2*Math.PI*u);
+  if(S.wave==='sq')return u<0.5?1:-1;
+  if(u<0.25)return 4*u;if(u<0.75)return 2-4*u;return 4*u-4;}
+const volt=u=>(S.vpp/2)*shape(u);
+
+/* ---------- CRT ---------- */
+const cv=$('cv'),cx=cv.getContext('2d');
+let lastSide=0,sizing=false;
+function resize(){
+  if(sizing)return;
+  sizing=true;
+  try{
+    const shell=cv.parentElement.parentElement;
+    const left=document.querySelector('.left');
+    /* only the thin 3px frame around the tube now — no outer bezel */
+    const pad=8;
+    /* measure the fixed furniture instead of asking a flex box for a height
+       it has not settled on yet — this keeps screen + knobs on one page */
+    const availH=window.innerHeight-document.querySelector('header').offsetHeight-18;
+    const measure=beside=>{
+      left.classList.toggle('beside',beside);
+      let s=shell.clientWidth-pad;
+      s=Math.min(s,beside?availH-pad:availH-$('ctrlBlock').offsetHeight-8-pad);
+      return Math.floor(s);
+    };
+    const stacked=window.matchMedia('(max-width:900px)').matches;
+    let side;
+    if(stacked){side=measure(false);}
+    else{
+      const a=measure(true),b=measure(false);
+      side=Math.max(a,b);
+      left.classList.toggle('beside',a>b);
+    }
+    side=Math.max(side,150);
+    if(Math.abs(side-lastSide)>=2){
+      lastSide=side;
+      const r=window.devicePixelRatio||1;
+      cv.style.width=side+'px';cv.style.height=side+'px';
+      cv.width=side*r;cv.height=side*r;
+      cx.setTransform(r,0,0,r,0,0);
+    }
+    draw();
+  }finally{sizing=false;}
+}
+let rafId=0;
+const queueResize=()=>{cancelAnimationFrame(rafId);rafId=requestAnimationFrame(resize);};
+addEventListener('resize',queueResize);
+addEventListener('orientationchange',()=>setTimeout(queueResize,250));
+if(window.ResizeObserver){
+  const ro=new ResizeObserver(queueResize);
+  ro.observe($('ctrlBlock'));
+  ro.observe(document.querySelector('.left'));
+}
+
+function draw(){
+  const dpr=window.devicePixelRatio||1,w=cv.width/dpr,h=cv.height/dpr,cw=w/DIVX,ch=h/DIVY;
+  const g=cx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#a3d8e8');g.addColorStop(.5,'#8ecbe0');g.addColorStop(1,'#7cbdd6');
+  cx.fillStyle=g;cx.fillRect(0,0,w,h);
+  cx.strokeStyle='rgba(28,72,110,.42)';cx.lineWidth=1;
+  for(let i=1;i<DIVX;i++){cx.beginPath();cx.moveTo(i*cw,0);cx.lineTo(i*cw,h);cx.stroke();}
+  for(let i=1;i<DIVY;i++){cx.beginPath();cx.moveTo(0,i*ch);cx.lineTo(w,i*ch);cx.stroke();}
+  cx.strokeStyle='rgba(20,60,100,.7)';const tk=7;
+  for(let i=0;i<=DIVX*5;i++){const x=i*cw/5;cx.beginPath();cx.moveTo(x,h/2-tk/2);cx.lineTo(x,h/2+tk/2);cx.stroke();}
+  for(let i=0;i<=DIVY*5;i++){const y=i*ch/5;cx.beginPath();cx.moveTo(w/2-tk/2,y);cx.lineTo(w/2+tk/2,y);cx.stroke();}
+  cx.strokeStyle='rgba(20,60,100,.5)';
+  cx.beginPath();cx.moveTo(0,h/2);cx.lineTo(w,h/2);cx.stroke();
+  cx.beginPath();cx.moveTo(w/2,0);cx.lineTo(w/2,h);cx.stroke();
+  cx.strokeStyle='rgba(20,60,100,.8)';cx.strokeRect(.5,.5,w-1,h-1);
+
+  const vd=VOLTS[S.vi],td=TIMES[S.ti],pxV=ch/vd,pxT=cw/td,zy=h/2-S.vpos*ch,f=freq();
+  cx.save();cx.beginPath();cx.rect(1,1,w-2,h-2);cx.clip();
+  trace(x=>zy-volt(((x-w/2)/pxT-S.hpos*td)*f)*pxV,w);
+  cx.restore();}
+
+function trace(fn,w){
+  /* two crisp passes, no blur: a soft halo then a sharp beam.
+     blur was unreadable and slow on tablets */
+  cx.lineJoin='round';cx.lineCap='round';
+  cx.strokeStyle='rgba(120,255,228,.30)';cx.lineWidth=6;path(fn,w);cx.stroke();
+  cx.strokeStyle='#5ef5d8';cx.lineWidth=2.2;path(fn,w);cx.stroke();}
+function path(fn,w){cx.beginPath();for(let x=0;x<=w;x+=0.25){const y=fn(x);x===0?cx.moveTo(x,y):cx.lineTo(x,y);}}
+
+/* ---------- i18n ---------- */
+const T={
+ en:{ttl:'Oscilloscope Virtual Lab',sub:'GOS-622G + GFG-8216',lang:'ไทย',teach:'Teacher',
+  h_ctrl:'Oscilloscope Controls',l_vpos:'POSITION ▲▼',l_hpos:'POSITION ◀▶',
+  h_fg:'Function Generator — Input',l_wave:'WAVEFORM',l_range:'RANGE (Hz)',l_dial:'FREQUENCY',l_ampl:'AMPL (Vp-p)',
+  h_quiz:'Unknown Signal',h_teach:'Teacher Panel',h_help:'How to read',
+  quizNote:'The generator settings are hidden. Turn VOLTS/DIV and TIME/DIV, count the divisions, then work out Vp-p and frequency.',
+  help:'1. Vp-p = (vertical divisions) × (VOLTS/DIV)<br>2. T = (horizontal divisions of one cycle) × (TIME/DIV)<br>3. f = 1 / T<br><br>Turn TIME/DIV until 2–3 cycles fill the screen, and VOLTS/DIV until the wave nearly fills the height.',
+  quizBtn:'New quiz',ansBtn:'Show answer',resetBtn:'Reset',exitTeach:'Exit',ansT:'ANSWER',
+  pwAsk:'Teacher password',pwBad:'Wrong password'},
+ th:{ttl:'ห้องปฏิบัติการออสซิลโลสโคป',sub:'GOS-622G + GFG-8216',lang:'English',teach:'ครู',
+  h_ctrl:'ส่วนควบคุมออสซิลโลสโคป',l_vpos:'เลื่อนขึ้น-ลง ▲▼',l_hpos:'เลื่อนซ้าย-ขวา ◀▶',
+  h_fg:'เครื่องกำเนิดสัญญาณ — อินพุต',l_wave:'รูปคลื่น',l_range:'ย่านความถี่ (Hz)',l_dial:'ปรับความถี่',l_ampl:'ความสูงคลื่น (Vp-p)',
+  h_quiz:'สัญญาณปริศนา',h_teach:'แผงควบคุมครู',h_help:'วิธีอ่านค่า',
+  quizNote:'ค่าของเครื่องกำเนิดสัญญาณถูกซ่อนไว้ ให้หมุนโวลต์/ช่อง และเวลา/ช่อง แล้วนับจำนวนช่อง เพื่อหา Vp-p และความถี่',
+  help:'1. Vp-p = (จำนวนช่องแนวตั้ง) × (โวลต์/ช่อง)<br>2. T = (จำนวนช่องแนวนอนของ 1 ลูกคลื่น) × (เวลา/ช่อง)<br>3. f = 1 / T<br><br>หมุนเวลา/ช่อง ให้เห็นคลื่น 2–3 ลูกเต็มจอ และหมุนโวลต์/ช่อง ให้คลื่นสูงเกือบเต็มจอ',
+  quizBtn:'สุ่มโจทย์ใหม่',ansBtn:'แสดงเฉลย',resetBtn:'รีเซ็ต',exitTeach:'ออก',ansT:'เฉลย',
+  pwAsk:'รหัสผ่านสำหรับครู',pwBad:'รหัสผ่านไม่ถูกต้อง'}};
+let L='en';
+
+/* ---------- wiring ---------- */
+buildKnob('voltKnob',VLAB,160,i=>{S.vi=i;refresh();});
+buildKnob('timeKnob',TLAB,160,i=>{S.ti=i;refresh();});
+
+RANGES.forEach(r=>{const b=document.createElement('button');b.className='sw';b.dataset.range=r;
+  b.textContent=r>=1e6?'1M':r>=1e3?(r/1e3)+'k':r;b.onclick=()=>{S.range=r;refresh();};$('rangeBtns').appendChild(b);});
+document.querySelectorAll('[data-wave]').forEach(b=>b.onclick=()=>{S.wave=b.dataset.wave;refresh();});
+$('dial').oninput=e=>{S.dial=+e.target.value;refresh();};
+$('ampl').oninput=e=>{S.vpp=+e.target.value;refresh();};
+$('vpos').oninput=e=>{S.vpos=+e.target.value;refresh();};
+$('hpos').oninput=e=>{S.hpos=+e.target.value;refresh();};
+$('vUp').onclick=()=>{if(S.vi<VOLTS.length-1){S.vi++;refresh();}};
+$('vDown').onclick=()=>{if(S.vi>0){S.vi--;refresh();}};
+$('tUp').onclick=()=>{if(S.ti<TIMES.length-1){S.ti++;refresh();}};
+$('tDown').onclick=()=>{if(S.ti>0){S.ti--;refresh();}};
+
+function refresh(){
+  $('voltKnob')._set(S.vi);$('timeKnob')._set(S.ti);
+  $('vVal').textContent=fmtV(VOLTS[S.vi]);$('tVal').textContent=fmtT(TIMES[S.ti]);
+  $('fgFreq').textContent=fmtF(freq());$('dialV').textContent=S.dial.toFixed(2);
+  $('amplV').textContent=S.vpp.toFixed(2)+' V';
+  $('vposV').textContent=S.vpos.toFixed(1);$('hposV').textContent=S.hpos.toFixed(1);
+  document.querySelectorAll('[data-wave]').forEach(b=>b.classList.toggle('on',b.dataset.wave===S.wave));
+  document.querySelectorAll('[data-range]').forEach(b=>b.classList.toggle('on',+b.dataset.range===S.range));
+  draw();}
+
+function setLang(x){L=x;const t=T[x];
+  $('ttl').childNodes[0].nodeValue=t.ttl+' ';$('sub').textContent=t.sub;
+  $('langBtn').textContent=t.lang;$('teachBtn').textContent=t.teach;
+  ['l_vpos','l_hpos','h_fg','l_wave','l_range','l_dial','l_ampl','h_quiz','h_teach','h_help']
+    .forEach(k=>$(k).textContent=t[k]);
+  $('quizNote').textContent=t.quizNote;$('helpTxt').innerHTML=t.help;
+  $('quizBtn').textContent=t.quizBtn;$('ansBtn').textContent=t.ansBtn;
+  $('resetBtn').textContent=t.resetBtn;$('exitTeach').textContent=t.exitTeach;refresh();}
+$('langBtn').onclick=()=>setLang(L==='en'?'th':'en');
+
+/* ---------- teacher ---------- */
+$('teachBtn').onclick=()=>{
+  if(!$('teachPanel').classList.contains('hidden')){return;}
+  const v=prompt(T[L].pwAsk);
+  if(v===null)return;
+  if(v===PW){$('teachPanel').classList.remove('hidden');}
+  else alert(T[L].pwBad);};
+$('exitTeach').onclick=()=>{$('teachPanel').classList.add('hidden');
+  $('fgPanel').classList.remove('hidden');$('quizPanel').classList.add('hidden');$('ansBox').classList.add('hidden');};
+$('quizBtn').onclick=()=>{const ws=['sine','tri','sq'];S.wave=ws[Math.floor(Math.random()*3)];
+  S.range=RANGES[1+Math.floor(Math.random()*4)];S.dial=+(0.2+Math.random()*0.8).toFixed(2);
+  S.vpp=+(0.4+Math.random()*7).toFixed(2);
+  $('fgPanel').classList.add('hidden');$('quizPanel').classList.remove('hidden');$('ansBox').classList.add('hidden');refresh();};
+$('ansBtn').onclick=()=>{const b=$('ansBox'),f=freq(),tp=1/f,nm={sine:'Sine',tri:'Triangle',sq:'Square'};
+  b.classList.toggle('hidden');
+  b.innerHTML=`<b>${T[L].ansT}</b><br>Wave : ${nm[S.wave]}<br>Vp-p : ${S.vpp.toFixed(2)} V (${(S.vpp/VOLTS[S.vi]).toFixed(2)} div)<br>T : ${fmtT(tp)} (${(tp/TIMES[S.ti]).toFixed(2)} div)<br>f : ${fmtF(f)}`;};
+$('resetBtn').onclick=()=>{Object.assign(S,{wave:'sine',range:1e3,dial:1,vpp:4,vi:7,ti:11,vpos:0,hpos:0});
+  $('dial').value=1;$('ampl').value=4;$('vpos').value=0;$('hpos').value=0;
+  $('fgPanel').classList.remove('hidden');$('quizPanel').classList.add('hidden');$('ansBox').classList.add('hidden');refresh();};
+
+setLang('en');resize();
+</script>
+</body>
+</html>
